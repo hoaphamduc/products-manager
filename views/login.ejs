@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <link rel="stylesheet" href="/css/style.css"> <!-- Thêm file CSS nếu cần -->
+</head>
+<body>
+    <div class="container">
+        <h1>Đăng nhập</h1>
+
+        <!-- Form đăng nhập bằng username -->
+        <form action="/api/users/login" method="POST">
+            <div>
+                <label for="username">Tên đăng nhập *</label>
+                <input type="text" id="username" name="username" required placeholder="Nhập tên đăng nhập của bạn">
+            </div>
+
+            <div>
+                <label for="password">Mật khẩu *</label>
+                <input type="password" id="password" name="password" required placeholder="Nhập mật khẩu">
+            </div>
+
+            <button type="submit">Đăng nhập</button>
+        </form>
+
+        <p>Chưa có tài khoản? <a href="/register">Đăng ký</a></p>
+    </div>
+</body>
+</html>

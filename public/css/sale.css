@@ -1,0 +1,32 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.list-group-item {
+    cursor: pointer;
+}
+
+.card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.card img {
+    height: 150px;
+    object-fit: cover;
+}
+
+.cart {
+    border: 1px solid #ddd;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#cart-items {
+    max-height: 300px;
+    overflow-y: auto;
+}

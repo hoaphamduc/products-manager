@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="/css/style.css"> <!-- File CSS cho style -->
+</head>
+<body>
+    <div class="container">
+        <h1>Đăng ký</h1>
+        <form action="/api/users/register" method="POST">
+            <div>
+                <label for="username">Tên đăng nhập *</label>
+                <input type="text" id="username" name="username" required minlength="6" placeholder="Tên đăng nhập ít nhất 6 ký tự">
+            </div>
+
+            <div>
+                <label for="password">Mật khẩu *</label>
+                <input type="password" id="password" name="password" required minlength="6" placeholder="Mật khẩu ít nhất 6 ký tự">
+            </div>
+
+            <div>
+                <label for="storeName">Tên cửa hàng *</label>
+                <input type="text" id="storeName" name="storeName" required>
+            </div>
+
+            <div>
+                <label for="field">Lĩnh vực</label>
+                <select id="field" name="field">
+                    <option value="am_thuc">Ẩm thực</option>
+                    <option value="thoi_trang">Thời trang</option>
+                    <!-- Thêm các lĩnh vực khác -->
+                </select>
+            </div>
+
+            <div>
+                <label for="phone">Số điện thoại *</label>
+                <div style="display: flex;">
+                    <input type="text" value="+84" readonly style="width: 50px; margin-right: 10px;">
+                    <input type="tel" id="phone" name="phone" required placeholder="Số điện thoại">
+                </div>
+            </div>
+
+            <div>
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required placeholder="Email">
+            </div>
+
+            <div>
+                <label for="country">Quốc gia *</label>
+                <select id="country" name="country">
+                    <option value="vietnam">Vietnam</option>
+                    <!-- Thêm quốc gia khác -->
+                </select>
+            </div>
+
+            <div>
+                <label for="city">Tỉnh/TP - Quận/Huyện *</label>
+                <input type="text" id="city" name="city" required placeholder="Tỉnh/TP - Quận/Huyện">
+            </div>
+
+            <div>
+                <label for="referral">Mã giới thiệu</label>
+                <input type="text" id="referral" name="referral" placeholder="Mã giới thiệu (nếu có)">
+            </div>
+
+            <div>
+                <input type="checkbox" id="initData" name="initData" value="yes">
+                <label for="initData">Khởi tạo dữ liệu mẫu</label>
+            </div>
+
+            <button type="submit">Đăng ký</button>
+        </form>
+        <p>Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
+    </div>
+</body>
+</html>
