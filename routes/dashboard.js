@@ -93,18 +93,36 @@ router.get('/sales/report', isAuthenticated, async (req, res) => {
     const username = req.session.user.username;
 
     try {
-        // Thống kê sản phẩm bán chạy
-        const bestSellingProducts = await Product.find({ user: username }).sort({ sold: -1 }).limit(10);
+        // Thống kê sản phẩm bán chạy (bỏ qua những sản phẩm có sold = 0)
+        const bestSellingProducts = await Product.find({ user: username, sold: { $gt: 0 } }).sort({ sold: -1 }).limit(10);
 
-        // Thống kê doanh thu
-        const dailyRevenue = await Revenue.find({ user: username }).sort({ date: -1 }).limit(30);  // Doanh thu theo ngày
+        // Thống kê sản phẩm sắp hết hàng (dưới 10 sản phẩm còn lại)
+        const lowStockProducts = await Product.find({ user: username, stock: { $lt: 10 } });
+
+        // Thống kê doanh thu theo ngày
+        const dailyRevenue = await Revenue.find({ user: username }).sort({ date: -1 }).limit(30);
+
+        // Thống kê doanh thu theo tháng
         const monthlyRevenue = await Revenue.aggregate([
             { $match: { user: username } },
             { $group: { _id: { $substr: ['$date', 0, 7] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo tháng
             { $sort: { _id: -1 } }
         ]);
 
-        res.render('report', { bestSellingProducts, dailyRevenue, monthlyRevenue });
+        // Thống kê doanh thu theo năm
+        const yearlyRevenue = await Revenue.aggregate([
+            { $match: { user: username } },
+            { $group: { _id: { $substr: ['$date', 0, 4] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo năm
+            { $sort: { _id: -1 } }
+        ]);
+
+        res.render('report', {
+            bestSellingProducts,
+            lowStockProducts,
+            dailyRevenue,
+            monthlyRevenue,
+            yearlyRevenue
+        });
     } catch (error) {
         console.error(error);
         res.status(500).send('Lỗi khi lấy thống kê');
@@ -287,5 +305,30 @@ router.post('/categories/new', isAuthenticated, async (req, res) => {
     }
 });
 
+// Route API trả về doanh thu theo ngày
+router.get('/api/daily-revenue', isAuthenticated, async (req, res) => {
+    const username = req.session.user.username;
+    try {
+        const dailyRevenue = await Revenue.find({ user: username }).sort({ date: -1 }).limit(30);
+        res.json(dailyRevenue); // Trả về JSON
+    } catch (err) {
+        res.status(500).send('Lỗi khi lấy doanh thu theo ngày');
+    }
+});
+
+// Route API trả về doanh thu theo tháng
+router.get('/api/monthly-revenue', isAuthenticated, async (req, res) => {
+    const username = req.session.user.username;
+    try {
+        const monthlyRevenue = await Revenue.aggregate([
+            { $match: { user: username } },
+            { $group: { _id: { $substr: ['$date', 0, 7] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo tháng
+            { $sort: { _id: -1 } }
+        ]);
+        res.json(monthlyRevenue); // Trả về JSON
+    } catch (err) {
+        res.status(500).send('Lỗi khi lấy doanh thu theo tháng');
+    }
+});
 
 module.exports = router;
