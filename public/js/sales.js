@@ -1,16 +1,29 @@
-let cart = [];
+// Lọc sản phẩm theo tên
+$('#search-input').on('keyup', function () {
+    var searchText = $(this).val().toLowerCase();
+    $('.product-item').each(function () {
+        var productName = $(this).find('.card-title').text().toLowerCase();
+        if (productName.indexOf(searchText) !== -1) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+});
+
+// Giỏ hàng
+const cart = [];
 
 $('.add-to-cart').on('click', function () {
     const productId = $(this).data('id');
-    const productStock = parseInt($(this).closest('.card').find('.stock').text());
+    const productName = $(this).closest('.card').find('.card-title').text();
+    const productPrice = parseInt($(this).closest('.card').find('.card-text').text().replace('đ', ''));
+    const productStock = parseInt($(this).closest('.card').find('.card-text').last().text().replace('Số lượng còn: ', ''));
 
     if (productStock === 0) {
         alert('Sản phẩm này đã hết hàng');
         return;
     }
-
-    const productName = $(this).closest('.card').find('.card-title').text();
-    const productPrice = parseInt($(this).closest('.card').find('.card-text').text().replace('đ', ''));
 
     const foundProduct = cart.find(item => item.id === productId);
     if (foundProduct) {
@@ -21,7 +34,6 @@ $('.add-to-cart').on('click', function () {
 
     renderCart();
 });
-
 
 function renderCart() {
     let subtotal = 0;
@@ -37,7 +49,7 @@ function renderCart() {
     });
 
     $('#subtotal').text(subtotal + 'đ');
-    const tax = subtotal * 0.1;
+    const tax = subtotal * 0.1;  // Thuế 10%
     $('#tax').text(tax + 'đ');
     const total = subtotal + tax;
     $('#total').text(total + 'đ');

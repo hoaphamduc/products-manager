@@ -22,9 +22,14 @@
 
             <!-- Phần sản phẩm ở giữa -->
             <div class="col-md-7">
-                <div class="row">
+                <!-- Input để tìm kiếm sản phẩm theo tên -->
+                <div class="mb-3">
+                    <input type="text" id="search-input" class="form-control" placeholder="Tìm kiếm sản phẩm theo tên">
+                </div>
+
+                <div class="row" id="product-list">
                     <% products.forEach(product => { %>
-                        <div class="col-md-3 mb-4">
+                        <div class="col-md-3 mb-4 product-item">
                             <div class="card">
                                 <% if (product.stock === 0) { %>
                                     <div class="card-body border border-danger p-2" style="position: relative;">
@@ -33,6 +38,7 @@
                                         <div class="card-body text-center">
                                             <h6 class="card-title"><%= product.name %></h6>
                                             <p class="card-text"><%= product.price %>đ</p>
+                                            <p class="card-text text-danger">Số lượng còn: 0</p>
                                             <button class="btn btn-secondary disabled">Hết hàng</button>
                                         </div>
                                     </div>
@@ -42,6 +48,7 @@
                                         <div class="card-body text-center">
                                             <h6 class="card-title"><%= product.name %></h6>
                                             <p class="card-text"><%= product.price %>đ</p>
+                                            <p class="card-text">Số lượng còn: <%= product.stock %></p>
                                             <button class="btn btn-primary add-to-cart" data-id="<%= product._id %>">Thêm vào giỏ</button>
                                         </div>
                                     </div>
