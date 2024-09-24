@@ -46,7 +46,6 @@ router.post('/sales/checkout', isAuthenticated, async (req, res) => {
 
     console.log('Cart received on server:', cart);  // Ghi log dữ liệu cart
 
-    // Kiểm tra nếu `cart` không phải là mảng hoặc không tồn tại
     if (!Array.isArray(cart)) {
         return res.status(400).send('Giỏ hàng không hợp lệ');
     }
@@ -65,14 +64,14 @@ router.post('/sales/checkout', isAuthenticated, async (req, res) => {
                 // Giảm số lượng sản phẩm trong kho
                 await Product.findByIdAndUpdate(item.id, { $inc: { stock: -item.quantity } });
 
-                // Thống kê bán chạy
+                // Cập nhật số lượng bán được
                 await Product.findByIdAndUpdate(item.id, { $inc: { sold: item.quantity } });
             } else {
-                return res.status(400).send('Không đủ hàng trong kho');
+                return res.status(400).send(`Không đủ hàng trong kho cho sản phẩm ${product.name}`);
             }
         }
 
-        // Xử lý thống kê doanh thu
+        // Tính toán tổng doanh thu
         const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const today = new Date();
         await Revenue.updateOne(

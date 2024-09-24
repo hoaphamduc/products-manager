@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +8,22 @@
     <link href="/assets/bs5/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/sale.css">
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar bên trái chứa các danh mục -->
             <div class="col-md-2">
                 <div class="list-group">
-                    <a href="/sales" class="list-group-item list-group-item-action <%= selectedCategory === 'Tất cả' ? 'active' : '' %>">Tất cả</a>
-                    <% categories.forEach(category => { %>
-                        <a href="/sales?category=<%= category.name %>" class="list-group-item list-group-item-action <%= selectedCategory === category.name ? 'active' : '' %>"><%= category.name %></a>
-                    <% }) %>
+                    <a href="/sales"
+                        class="list-group-item list-group-item-action <%= selectedCategory === 'Tất cả' ? 'active' : '' %>">Tất
+                        cả</a>
+                    <% categories.forEach(category=> { %>
+                        <a href="/sales?category=<%= category.name %>"
+                            class="list-group-item list-group-item-action <%= selectedCategory === category.name ? 'active' : '' %>">
+                            <%= category.name %>
+                        </a>
+                        <% }) %>
                 </div>
             </div>
 
@@ -28,34 +35,45 @@
                 </div>
 
                 <div class="row" id="product-list">
-                    <% products.forEach(product => { %>
+                    <% products.forEach(product=> { %>
                         <div class="col-md-3 mb-4 product-item">
                             <div class="card">
-                                <% if (product.stock === 0) { %>
+                                <% if (product.stock===0) { %>
                                     <div class="card-body border border-danger p-2" style="position: relative;">
-                                        <span class="badge bg-danger" style="position: absolute; top: 10px; right: 10px;">Hết hàng</span>
+                                        <span class="badge bg-danger"
+                                            style="position: absolute; top: 10px; right: 10px;">Hết hàng</span>
                                         <img src="<%= product.imageUrl %>" class="card-img-top" alt="Product Image">
                                         <div class="card-body text-center">
-                                            <h6 class="card-title"><%= product.name %></h6>
-                                            <p class="card-text"><%= product.price %>đ</p>
+                                            <h6 class="card-title">
+                                                <%= product.name %>
+                                            </h6>
+                                            <p class="card-text">
+                                                <%= product.price %>đ
+                                            </p>
                                             <p class="card-text text-danger">Số lượng còn: 0</p>
                                             <button class="btn btn-secondary disabled">Hết hàng</button>
                                         </div>
                                     </div>
-                                <% } else { %>
-                                    <div class="card-body">
-                                        <img src="<%= product.imageUrl %>" class="card-img-top" alt="Product Image">
-                                        <div class="card-body text-center">
-                                            <h6 class="card-title"><%= product.name %></h6>
-                                            <p class="card-text"><%= product.price %>đ</p>
-                                            <p class="card-text">Số lượng còn: <%= product.stock %></p>
-                                            <button class="btn btn-primary add-to-cart" data-id="<%= product._id %>">Thêm vào giỏ</button>
+                                    <% } else { %>
+                                        <div class="card-body">
+                                            <img src="<%= product.imageUrl %>" class="card-img-top" alt="Product Image">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-title">
+                                                    <%= product.name %>
+                                                </h6>
+                                                <p class="card-text">
+                                                    <%= product.price %>đ
+                                                </p>
+                                                <p class="card-text">Số lượng còn: <%= product.stock %>
+                                                </p>
+                                                <button class="btn btn-primary add-to-cart"
+                                                    data-id="<%= product._id %>">Thêm vào giỏ</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                <% } %>
+                                        <% } %>
                             </div>
                         </div>
-                    <% }) %>
+                        <% }) %>
                 </div>
             </div>
 
@@ -71,7 +89,7 @@
                         <p>Thuế hóa đơn: <span id="tax">0đ</span></p>
                         <p>Chiết khấu: <span id="discount">0%</span></p>
                         <h5>Tổng cộng: <span id="total">0đ</span></h5>
-                        <button class="btn btn-success w-100">Thanh toán</button>
+                        <button id="checkout-btn" class="btn btn-success w-100">Thanh toán</button>
                     </div>
                 </div>
             </div>
@@ -83,4 +101,5 @@
     <script src="/assets/bs5/bootstrap.bundle.min.js"></script>
     <script src="/js/sales.js"></script>
 </body>
+
 </html>
