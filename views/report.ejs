@@ -1,0 +1,22 @@
+<h2>Thống kê</h2>
+
+<h3>Sản phẩm bán chạy nhất</h3>
+<ul>
+    <% bestSellingProducts.forEach(product => { %>
+        <li><%= product.name %>: <%= product.sold %> sản phẩm đã bán</li>
+    <% }) %>
+</ul>
+
+<h3>Doanh thu theo ngày</h3>
+<ul>
+    <% dailyRevenue.forEach(rev => { %>
+        <li><%= rev.date %>: <%= rev.totalRevenue %>đ</li>
+    <% }) %>
+</ul>
+
+<h3>Doanh thu theo tháng</h3>
+<ul>
+    <% monthlyRevenue.forEach(rev => { %>
+        <li><%= rev._id %>: <%= rev.total %>đ</li>
+    <% }) %>
+</ul>

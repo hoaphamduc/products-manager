@@ -19,8 +19,9 @@ const app = express();
 app.use(layoutMiddleware);
 
 // Middleware để parse dữ liệu từ form (body-parser)
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Dùng để xử lý JSON
+
 
 // Cấu hình session
 app.use(session({

@@ -5,6 +5,8 @@ const upload = require('../config/multer');
 const fs = require('fs');
 const path = require('path');
 const { isAuthenticated } = require('../middlewares/auth');
+const Category = require('../models/Category');
+const Revenue = require('../models/Revenue');
 
 // Route dashboard, chỉ dành cho người dùng đã đăng nhập
 router.get('/dashboard', (req, res) => {
@@ -14,15 +16,98 @@ router.get('/dashboard', (req, res) => {
     res.renderWithLayout('dashboard', { user: req.session.user });
 });
 
-// Route bán hàng
-router.get('/sales', async (req, res) => {
+router.get('/sales', isAuthenticated, async (req, res) => {
     try {
-        const products = await Product.find({});
-        const categories = ['Tất cả', 'Mi - Cháo - Phở', 'Bia - Kẹo', 'Dầu gội - Sữa tắm', 'Văn phòng phẩm', 'Beverage', 'Food Preparation'];
-        res.render('sale', { products, categories });
+        const username = req.session.user.username;
+        const selectedCategory = req.query.category || 'Tất cả';
+
+        // Lấy danh sách danh mục của người dùng
+        const categories = await Category.find({ user: username });
+
+        // Nếu chọn "Tất cả", lấy tất cả sản phẩm, nếu không thì lọc theo danh mục
+        let products;
+        if (selectedCategory === 'Tất cả') {
+            products = await Product.find({ user: username });
+        } else {
+            products = await Product.find({ user: username, category: selectedCategory });
+        }
+
+        res.render('sales', { products, categories, selectedCategory });
     } catch (error) {
         console.error(error);
         res.status(500).send('Lỗi khi lấy sản phẩm');
+    }
+});
+
+
+router.post('/sales/checkout', isAuthenticated, async (req, res) => {
+    const { cart } = req.body;
+    const username = req.session.user.username;
+
+    console.log('Cart received on server:', cart);  // Ghi log dữ liệu cart
+
+    // Kiểm tra nếu `cart` không phải là mảng hoặc không tồn tại
+    if (!Array.isArray(cart)) {
+        return res.status(400).send('Giỏ hàng không hợp lệ');
+    }
+
+    try {
+        for (let item of cart) {
+            const product = await Product.findById(item.id);
+            if (!product) {
+                console.log(`Sản phẩm với ID ${item.id} không tồn tại`);
+                return res.status(400).send(`Sản phẩm với ID ${item.id} không tồn tại`);
+            }
+
+            console.log(`Sản phẩm tìm thấy: ${product.name}, Số lượng trong kho: ${product.stock}`);
+
+            if (product.stock >= item.quantity) {
+                // Giảm số lượng sản phẩm trong kho
+                await Product.findByIdAndUpdate(item.id, { $inc: { stock: -item.quantity } });
+
+                // Thống kê bán chạy
+                await Product.findByIdAndUpdate(item.id, { $inc: { sold: item.quantity } });
+            } else {
+                return res.status(400).send('Không đủ hàng trong kho');
+            }
+        }
+
+        // Xử lý thống kê doanh thu
+        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const today = new Date();
+        await Revenue.updateOne(
+            { user: username, date: today.toISOString().split('T')[0] },
+            { $inc: { totalRevenue: total } },
+            { upsert: true }
+        );
+
+        res.status(200).send('Thanh toán thành công');
+    } catch (error) {
+        console.error('Lỗi khi thanh toán:', error);
+        res.status(500).send('Lỗi khi thanh toán');
+    }
+});
+
+
+router.get('/sales/report', isAuthenticated, async (req, res) => {
+    const username = req.session.user.username;
+
+    try {
+        // Thống kê sản phẩm bán chạy
+        const bestSellingProducts = await Product.find({ user: username }).sort({ sold: -1 }).limit(10);
+
+        // Thống kê doanh thu
+        const dailyRevenue = await Revenue.find({ user: username }).sort({ date: -1 }).limit(30);  // Doanh thu theo ngày
+        const monthlyRevenue = await Revenue.aggregate([
+            { $match: { user: username } },
+            { $group: { _id: { $substr: ['$date', 0, 7] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo tháng
+            { $sort: { _id: -1 } }
+        ]);
+
+        res.render('report', { bestSellingProducts, dailyRevenue, monthlyRevenue });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Lỗi khi lấy thống kê');
     }
 });
 
@@ -168,7 +253,6 @@ router.post('/products/:id/edit', isAuthenticated, upload.single('image'), async
     }
 });
 
-const Category = require('../models/Category');
 
 // Route hiển thị form thêm danh mục
 router.get('/categories/new', isAuthenticated, (req, res) => {
