@@ -19,7 +19,7 @@ if (CSS.supports('animation-timeline', 'auto')) {
 }
 
 const textSpan = document.getElementById('text-span');
-const texts = ["Hãy lắng nghe", "Những câu chuyện buồn", "Để thấy trái tim", "Ta biết yêu thương", "Thời gian cứ trôi", "Tình người còn mãi", "Quà tặng cuộc sống"];
+const texts = ["Siêu tiết kiệm", "Dịch vụ tận tâm", "Ưu đãi mỗi ngày", "Khuyến mãi hấp dẫn", "Điểm đến của gia đình", "Siêu thị mini - Tiện lợi mỗi ngày"];
 let textIndex = 0;
 let charIndex = 0;
 let deleting = false;

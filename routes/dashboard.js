@@ -4,29 +4,31 @@ const Product = require('../models/product');
 const upload = require('../config/multer');
 const fs = require('fs');
 const path = require('path');
-const { isAuthenticated } = require('../middlewares/auth');
 const Category = require('../models/Category');
 const Revenue = require('../models/Revenue');
 
-// Route dashboard, chỉ dành cho người dùng đã đăng nhập
-router.get('/dashboard', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
+// Middleware to check if the user is authenticated
+const isAuthenticated = (req, res, next) => {
+    if (req.session && req.session.user) {
+        return next(); // User is authenticated, proceed
     }
+    return res.redirect('/login'); // Redirect to login if not authenticated
+};
+
+// Route for the dashboard, only accessible by logged-in users
+router.get('/dashboard', isAuthenticated, (req, res) => {
     res.render('dashboard', { user: req.session.user });
 });
 
+// Route for sales page
 router.get('/sales', isAuthenticated, async (req, res) => {
     try {
         const username = req.session.user.username;
-        const user = req.session.user; // Get user from session
+        const user = req.session.user;
 
         const selectedCategory = req.query.category || 'Tất cả';
-
-        // Lấy danh sách danh mục của người dùng
         const categories = await Category.find({ user: username });
 
-        // Nếu chọn "Tất cả", lấy tất cả sản phẩm, nếu không thì lọc theo danh mục
         let products;
         if (selectedCategory === 'Tất cả') {
             products = await Product.find({ user: username });
@@ -34,7 +36,6 @@ router.get('/sales', isAuthenticated, async (req, res) => {
             products = await Product.find({ user: username, category: selectedCategory });
         }
 
-        // Pass user object along with products, categories, and selectedCategory
         res.render('sales', { products, categories, selectedCategory, user });
     } catch (error) {
         console.error(error);
@@ -42,12 +43,10 @@ router.get('/sales', isAuthenticated, async (req, res) => {
     }
 });
 
-
+// Route to handle sales checkout
 router.post('/sales/checkout', isAuthenticated, async (req, res) => {
     const { cart } = req.body;
     const username = req.session.user.username;
-
-    console.log('Cart received on server:', cart);  // Ghi log dữ liệu cart
 
     if (!Array.isArray(cart)) {
         return res.status(400).send('Giỏ hàng không hợp lệ');
@@ -61,17 +60,13 @@ router.post('/sales/checkout', isAuthenticated, async (req, res) => {
             }
 
             if (product.stock >= item.quantity) {
-                // Giảm số lượng sản phẩm trong kho
                 await Product.findByIdAndUpdate(item.id, { $inc: { stock: -item.quantity } });
-
-                // Cập nhật số lượng bán được
                 await Product.findByIdAndUpdate(item.id, { $inc: { sold: item.quantity } });
             } else {
                 return res.status(400).send(`Không đủ hàng trong kho cho sản phẩm ${product.name}`);
             }
         }
 
-        // Tính toán tổng doanh thu
         const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const today = new Date();
         await Revenue.updateOne(
@@ -87,30 +82,24 @@ router.post('/sales/checkout', isAuthenticated, async (req, res) => {
     }
 });
 
+// Route to get sales report
 router.get('/sales/report', isAuthenticated, async (req, res) => {
     const username = req.session.user.username;
 
     try {
-        // Thống kê sản phẩm bán chạy (bỏ qua những sản phẩm có sold = 0)
         const bestSellingProducts = await Product.find({ user: username, sold: { $gt: 0 } }).sort({ sold: -1 }).limit(10);
-
-        // Thống kê sản phẩm sắp hết hàng (dưới 10 sản phẩm còn lại)
         const lowStockProducts = await Product.find({ user: username, stock: { $lt: 10 } });
-
-        // Thống kê doanh thu theo ngày
         const dailyRevenue = await Revenue.find({ user: username }).sort({ date: -1 }).limit(30);
 
-        // Thống kê doanh thu theo tháng
         const monthlyRevenue = await Revenue.aggregate([
             { $match: { user: username } },
-            { $group: { _id: { $substr: ['$date', 0, 7] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo tháng
+            { $group: { _id: { $substr: ['$date', 0, 7] }, total: { $sum: '$totalRevenue' } } },
             { $sort: { _id: -1 } }
         ]);
 
-        // Thống kê doanh thu theo năm
         const yearlyRevenue = await Revenue.aggregate([
             { $match: { user: username } },
-            { $group: { _id: { $substr: ['$date', 0, 4] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo năm
+            { $group: { _id: { $substr: ['$date', 0, 4] }, total: { $sum: '$totalRevenue' } } },
             { $sort: { _id: -1 } }
         ]);
 
@@ -127,20 +116,11 @@ router.get('/sales/report', isAuthenticated, async (req, res) => {
     }
 });
 
-router.get('/partners', (req, res) => {
-    res.renderWithLayout('partners', { title: 'Đối tác' });
-});
-
-// GET: Trang quản lý sản phẩm (chỉ hiển thị sản phẩm của người dùng hiện tại)
-
-// Route cho trang quản lý sản phẩm
+// Route for managing products
 router.get('/products', isAuthenticated, async (req, res) => {
     try {
-        // Lấy danh mục của user từ database
         const username = req.session.user.username;
         const categories = await Category.find({ user: username });
-
-        // Lấy sản phẩm của user nếu cần (giả sử user cũng liên quan tới sản phẩm)
         const products = await Product.find({ user: username });
 
         res.render('products', { title: 'Quản lý kho', products, categories });
@@ -149,19 +129,19 @@ router.get('/products', isAuthenticated, async (req, res) => {
         res.status(500).send('Lỗi server');
     }
 });
-// Route thêm sản phẩm mới
+
+// Route to add new product
 router.post('/products/new', isAuthenticated, upload.single('image'), async (req, res) => {
     const { name, description, price, stock, category } = req.body;
-    let imageUrl = '/uploads/default.png'; // Nếu không có ảnh
+    let imageUrl = '/uploads/default.png';
 
     if (req.file) {
         imageUrl = `/uploads/${req.file.filename}`;
     }
 
     try {
-        // Lấy username từ session để lưu vào sản phẩm
         const username = req.session.user.username;
-        
+
         if (!username) {
             return res.status(400).send('User chưa đăng nhập');
         }
@@ -173,7 +153,7 @@ router.post('/products/new', isAuthenticated, upload.single('image'), async (req
             stock,
             imageUrl,
             category,
-            user: username  // Lưu username của người dùng
+            user: username
         });
 
         await newProduct.save();
@@ -184,13 +164,12 @@ router.post('/products/new', isAuthenticated, upload.single('image'), async (req
     }
 });
 
-
-// POST: Cập nhật số lượng kho của sản phẩm
+// Route to update product stock
 router.post('/products/:id/add-stock', isAuthenticated, async (req, res) => {
     const { id } = req.params;
     const { stock } = req.body;
+
     try {
-        // Tìm sản phẩm theo ID và cập nhật số lượng trong kho
         await Product.findByIdAndUpdate(id, { $inc: { stock: stock } });
         res.redirect('/products');
     } catch (err) {
@@ -199,32 +178,27 @@ router.post('/products/:id/add-stock', isAuthenticated, async (req, res) => {
     }
 });
 
-// DELETE: Xóa sản phẩm và xóa ảnh khỏi máy chủ
+// Route to delete product
 router.post('/products/:id/delete', isAuthenticated, async (req, res) => {
     const { id } = req.params;
 
     try {
-        // Tìm sản phẩm theo ID
         const product = await Product.findById(id);
 
         if (!product) {
             return res.status(404).send('Sản phẩm không tồn tại');
         }
 
-        // Lấy đường dẫn hình ảnh của sản phẩm
         const imagePath = path.join(__dirname, '..', product.imageUrl);
 
-        // Xóa sản phẩm khỏi DB
-        await Product.deleteOne({ _id: id });  // Sử dụng deleteOne để xóa sản phẩm
+        await Product.deleteOne({ _id: id });
 
-        // Xóa file ảnh khỏi máy chủ
         fs.unlink(imagePath, (err) => {
             if (err) {
                 console.error('Lỗi khi xóa file:', err);
                 return res.status(500).send('Lỗi khi xóa ảnh');
             }
 
-            // Sau khi xóa thành công
             res.redirect('/products');
         });
     } catch (err) {
@@ -233,14 +207,16 @@ router.post('/products/:id/delete', isAuthenticated, async (req, res) => {
     }
 });
 
-// Route hiển thị form sửa sản phẩm
+// Route to display product edit form
 router.get('/products/:id/edit', isAuthenticated, async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-        const categories = await Category.find({ user: req.session.user.username }); // Lấy danh mục của user
+        const categories = await Category.find({ user: req.session.user.username });
+
         if (!product) {
             return res.status(404).send('Sản phẩm không tồn tại');
         }
+
         res.render('editProduct', { title: 'Sửa sản phẩm', product, categories });
     } catch (err) {
         console.error(err);
@@ -248,13 +224,12 @@ router.get('/products/:id/edit', isAuthenticated, async (req, res) => {
     }
 });
 
-// Route xử lý cập nhật sản phẩm
+// Route to update product details
 router.post('/products/:id/edit', isAuthenticated, upload.single('image'), async (req, res) => {
     const { name, description, price, stock, category } = req.body;
     let updatedProduct = { name, description, price, stock, category };
 
     if (req.file) {
-        // Cập nhật hình ảnh nếu có hình mới
         updatedProduct.imageUrl = `/uploads/${req.file.filename}`;
     }
 
@@ -267,13 +242,7 @@ router.post('/products/:id/edit', isAuthenticated, upload.single('image'), async
     }
 });
 
-
-// Route hiển thị form thêm danh mục
-router.get('/categories/new', isAuthenticated, (req, res) => {
-    res.render('newCategory', { title: 'Thêm danh mục mới' });
-});
-
-// Route xử lý thêm danh mục mới
+// Route to add new category
 router.post('/categories/new', isAuthenticated, async (req, res) => {
     const { category } = req.body;
     const username = req.session.user.username;
@@ -298,47 +267,6 @@ router.post('/categories/new', isAuthenticated, async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('Lỗi khi thêm danh mục');
-    }
-});
-
-// Route API trả về doanh thu theo ngày
-router.get('/api/daily-revenue', isAuthenticated, async (req, res) => {
-    const username = req.session.user.username;
-    try {
-        const dailyRevenue = await Revenue.find({ user: username }).sort({ date: 1 }).limit(30); // Sắp xếp theo ngày tăng dần
-        res.json(dailyRevenue); // Trả về JSON
-    } catch (err) {
-        res.status(500).send('Lỗi khi lấy doanh thu theo ngày');
-    }
-});
-
-// Route API trả về doanh thu theo tháng
-router.get('/api/monthly-revenue', isAuthenticated, async (req, res) => {
-    const username = req.session.user.username;
-    const currentYear = new Date().getFullYear().toString(); // Lấy năm hiện tại dưới dạng chuỗi
-    try {
-        const monthlyRevenue = await Revenue.aggregate([
-            { $match: { user: username, date: { $regex: `^${currentYear}` } } },  // Chỉ lấy dữ liệu của năm hiện tại
-            { $group: { _id: { $substr: ['$date', 0, 7] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo tháng
-            { $sort: { _id: 1 } }  // Sắp xếp theo tháng tăng dần
-        ]);
-        res.json(monthlyRevenue); // Trả về JSON
-    } catch (err) {
-        res.status(500).send('Lỗi khi lấy doanh thu theo tháng');
-    }
-});
-
-router.get('/api/yearly-revenue', isAuthenticated, async (req, res) => {
-    const username = req.session.user.username;
-    try {
-        const yearlyRevenue = await Revenue.aggregate([
-            { $match: { user: username } },
-            { $group: { _id: { $substr: ['$date', 0, 4] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo năm
-            { $sort: { _id: 1 } }  // Sắp xếp theo năm tăng dần
-        ]);
-        res.json(yearlyRevenue); // Trả về JSON
-    } catch (err) {
-        res.status(500).send('Lỗi khi lấy doanh thu theo năm');
     }
 });
 

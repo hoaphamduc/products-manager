@@ -29,7 +29,7 @@ app.use((err, req, res, next) => {
 
 // Cấu hình session
 app.use(session({
-    secret: 'meobeosieudeptrai@2024',  // Đặt khóa bí mật
+    secret: 'meobeosieudeptrai@2024',  // Khóa bí mật
     resave: false,  // Không lưu lại session nếu không có sự thay đổi
     saveUninitialized: false,  // Không lưu session mới chưa được khởi tạo
     cookie: {
@@ -38,7 +38,8 @@ app.use(session({
     },
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,  // URL kết nối MongoDB
-        collectionName: 'sessions'  // Tên collection để lưu session
+        collectionName: 'sessions',  // Tên collection để lưu session
+        ttl: 60 * 60  // Thời gian sống của session trong MongoDB (1 giờ)
     })
 }));
 
@@ -61,28 +62,9 @@ app.use('/', dashboardRoutes);
 // Trang chủ
 app.get('/', (req, res) => {
     if (req.session.user) {
-        // Nếu đã đăng nhập, chuyển hướng đến /dashboard
         return res.redirect('/dashboard');
     }
     res.render('index', { title: 'Trang chủ' });
-});
-
-// Route đăng nhập, kiểm tra trực tiếp nếu đã đăng nhập
-app.get('/login', (req, res) => {
-    if (req.session.user) {
-        // Nếu đã đăng nhập, chuyển hướng đến /dashboard
-        return res.redirect('/dashboard');
-    }
-    res.render('login');  // Nếu chưa đăng nhập, hiển thị trang login
-});
-
-// Route đăng ký, kiểm tra trực tiếp nếu đã đăng nhập
-app.get('/register', (req, res) => {
-    if (req.session.user) {
-        // Nếu đã đăng nhập, chuyển hướng đến /dashboard
-        return res.redirect('/dashboard');
-    }
-    res.render('register');  // Nếu chưa đăng nhập, hiển thị trang đăng ký
 });
 
 // Cấu hình port
