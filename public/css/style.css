@@ -1,0 +1,14 @@
+.back-to-dashboard {
+    position: fixed;
+    z-index: 999999;
+    top: 5px;
+    left: 5px;
+    background-color: rgba(255, 255, 255, 0.88);
+    backdrop-filter: 5px;
+    height: 40px;
+    cursor: pointer;
+}
+
+.back-to-dashboard img {
+    height: 100%;
+}

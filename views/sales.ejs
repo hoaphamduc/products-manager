@@ -7,6 +7,8 @@
     <title>Bán hàng</title>
     <link href="/assets/bs5/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/sale.css">
+    <script src="/assets/swal2/swal2.js"></script>
+
 </head>
 
 <body>
@@ -24,6 +26,8 @@
                             <%= category.name %>
                         </a>
                         <% }) %>
+                            <a href="/dashboard" class="list-group-item list-group-item-action"
+                                style="background-color: #333; color: #fff;">Về trang tổng quan</a>
                 </div>
             </div>
 
@@ -90,6 +94,54 @@
                         <p>Chiết khấu: <span id="discount">0%</span></p>
                         <h5>Tổng cộng: <span id="total">0đ</span></h5>
                         <button id="checkout-btn" class="btn btn-success w-100">Thanh toán</button>
+
+                        <!-- Modal for Payment -->
+                        <div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel"
+                            aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="checkoutModalLabel">Phương thức thanh toán</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <h6>Chọn phương thức thanh toán:</h6>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="paymentMethod"
+                                                id="bankTransfer" value="bank">
+                                            <label class="form-check-label" for="bankTransfer">Chuyển khoản ngân
+                                                hàng</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="paymentMethod"
+                                                id="cashPayment" value="cash">
+                                            <label class="form-check-label" for="cashPayment">Thanh toán tiền
+                                                mặt</label>
+                                        </div>
+
+                                        <!-- Bank transfer section (hidden by default) -->
+                                        <div id="bankTransferDetails" style="display: none;">
+                                            <h6 class="mt-3">Quét mã QR để thanh toán:</h6>
+                                            <img src="/images/qr-code.png" alt="QR Code" class="img-fluid">
+                                            <button id="confirmBankTransfer" class="btn btn-primary mt-3">Xác nhận đã
+                                                thanh toán</button>
+                                        </div>
+
+                                        <!-- Cash payment section (hidden by default) -->
+                                        <div id="cashPaymentDetails" style="display: none;">
+                                            <h6 class="mt-3">Xác nhận thanh toán tiền mặt</h6>
+                                            <button id="confirmCashPayment" class="btn btn-primary">Xác nhận đã thanh
+                                                toán</button>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Đóng</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

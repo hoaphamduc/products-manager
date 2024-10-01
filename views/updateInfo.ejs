@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update User Information</title>
+    <link href="/assets/bs5/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h2>Cập nhật thông tin người dùng</h2>
+
+        <form action="/update-info" method="POST" enctype="multipart/form-data">
+            <!-- Tên cửa hàng -->
+            <div class="mb-3">
+                <label for="storeName" class="form-label">Tên cửa hàng</label>
+                <input type="text" class="form-control" id="storeName" name="storeName" value="<%= user.storeName %>" required>
+            </div>
+
+            <!-- Địa chỉ cửa hàng -->
+            <div class="mb-3">
+                <label for="storeAddress" class="form-label">Địa chỉ cửa hàng</label>
+                <input type="text" class="form-control" id="storeAddress" name="storeAddress" value="<%= user.storeAddress %>" required>
+            </div>
+
+            <!-- Số điện thoại -->
+            <div class="mb-3">
+                <label for="phone" class="form-label">Số điện thoại</label>
+                <input type="text" class="form-control" id="phone" name="phone" value="<%= user.phone %>" required>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="<%= user.email %>" required>
+            </div>
+
+            <!-- Vai trò người dùng -->
+            <div class="mb-3">
+                <label for="role" class="form-label">Vai trò</label>
+                <select class="form-select" id="role" name="role" required>
+                    <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                    <option value="shopOwner" <%= user.role === 'shopOwner' ? 'selected' : '' %>>Chủ cửa hàng</option>
+                    <option value="staff" <%= user.role === 'staff' ? 'selected' : '' %>>Nhân viên</option>
+                </select>
+            </div>
+
+            <!-- Số tài khoản ngân hàng -->
+            <div class="mb-3">
+                <label for="bankAccountNumber" class="form-label">Số tài khoản ngân hàng</label>
+                <input type="text" class="form-control" id="bankAccountNumber" name="bankAccountNumber" value="<%= user.bankAccountNumber %>" required>
+            </div>
+
+            <!-- Mã QR (Hình ảnh) -->
+            <div class="mb-3">
+                <label for="qrCodeImage" class="form-label">Hình ảnh mã QR</label><br>
+                <% if (user.qrCodeImageUrl) { %>
+                    <img src="<%= user.qrCodeImageUrl %>" alt="QR Code" width="100"><br>
+                <% } %>
+                <input type="file" class="form-control" id="qrCodeImage" name="qrCodeImage">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Cập nhật</button>
+        </form>
+    </div>
+
+    <script src="/assets/jquery/jquery.js"></script>
+    <script src="/assets/bs5/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

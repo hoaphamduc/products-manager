@@ -22,6 +22,10 @@ app.use(layoutMiddleware);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // Dùng để xử lý JSON
 
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something went wrong!');
+});
 
 // Cấu hình session
 app.use(session({
@@ -42,7 +46,6 @@ app.use(session({
 const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboard');
 
-
 // Cấu hình view engine (EJS)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -52,7 +55,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Định nghĩa route
-app.use('/api/users', userRoutes);
+app.use('/', userRoutes);
 app.use('/', dashboardRoutes);
 
 // Trang chủ

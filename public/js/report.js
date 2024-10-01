@@ -43,3 +43,25 @@ fetch('/api/monthly-revenue')
         });
     })
     .catch(error => console.error('Lỗi khi lấy dữ liệu doanh thu theo tháng:', error));
+
+fetch('/api/yearly-revenue')
+    .then(response => response.json())
+    .then(data => {
+        const yearlyLabels = data.map(rev => rev._id); // Sử dụng năm làm label
+        const yearlyData = data.map(rev => rev.total); // Tổng doanh thu theo năm
+
+        const yearlyRevenueChart = new Chart(document.getElementById('yearlyRevenueChart'), {
+            type: 'bar',  // Sử dụng biểu đồ cột
+            data: {
+                labels: yearlyLabels,
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: yearlyData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            }
+        });
+    })
+    .catch(error => console.error('Lỗi khi lấy dữ liệu doanh thu theo năm:', error));

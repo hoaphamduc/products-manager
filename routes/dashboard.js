@@ -308,7 +308,7 @@ router.post('/categories/new', isAuthenticated, async (req, res) => {
 router.get('/api/daily-revenue', isAuthenticated, async (req, res) => {
     const username = req.session.user.username;
     try {
-        const dailyRevenue = await Revenue.find({ user: username }).sort({ date: -1 }).limit(30);
+        const dailyRevenue = await Revenue.find({ user: username }).sort({ date: 1 }).limit(30); // Sắp xếp theo ngày tăng dần
         res.json(dailyRevenue); // Trả về JSON
     } catch (err) {
         res.status(500).send('Lỗi khi lấy doanh thu theo ngày');
@@ -318,15 +318,30 @@ router.get('/api/daily-revenue', isAuthenticated, async (req, res) => {
 // Route API trả về doanh thu theo tháng
 router.get('/api/monthly-revenue', isAuthenticated, async (req, res) => {
     const username = req.session.user.username;
+    const currentYear = new Date().getFullYear().toString(); // Lấy năm hiện tại dưới dạng chuỗi
     try {
         const monthlyRevenue = await Revenue.aggregate([
-            { $match: { user: username } },
+            { $match: { user: username, date: { $regex: `^${currentYear}` } } },  // Chỉ lấy dữ liệu của năm hiện tại
             { $group: { _id: { $substr: ['$date', 0, 7] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo tháng
-            { $sort: { _id: -1 } }
+            { $sort: { _id: 1 } }  // Sắp xếp theo tháng tăng dần
         ]);
         res.json(monthlyRevenue); // Trả về JSON
     } catch (err) {
         res.status(500).send('Lỗi khi lấy doanh thu theo tháng');
+    }
+});
+
+router.get('/api/yearly-revenue', isAuthenticated, async (req, res) => {
+    const username = req.session.user.username;
+    try {
+        const yearlyRevenue = await Revenue.aggregate([
+            { $match: { user: username } },
+            { $group: { _id: { $substr: ['$date', 0, 4] }, total: { $sum: '$totalRevenue' } } },  // Nhóm theo năm
+            { $sort: { _id: 1 } }  // Sắp xếp theo năm tăng dần
+        ]);
+        res.json(yearlyRevenue); // Trả về JSON
+    } catch (err) {
+        res.status(500).send('Lỗi khi lấy doanh thu theo năm');
     }
 });
 
