@@ -13,12 +13,14 @@ router.get('/dashboard', (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
     }
-    res.renderWithLayout('dashboard', { user: req.session.user });
+    res.render('dashboard', { user: req.session.user });
 });
 
 router.get('/sales', isAuthenticated, async (req, res) => {
     try {
         const username = req.session.user.username;
+        const user = req.session.user; // Get user from session
+
         const selectedCategory = req.query.category || 'Tất cả';
 
         // Lấy danh sách danh mục của người dùng
@@ -32,7 +34,8 @@ router.get('/sales', isAuthenticated, async (req, res) => {
             products = await Product.find({ user: username, category: selectedCategory });
         }
 
-        res.render('sales', { products, categories, selectedCategory });
+        // Pass user object along with products, categories, and selectedCategory
+        res.render('sales', { products, categories, selectedCategory, user });
     } catch (error) {
         console.error(error);
         res.status(500).send('Lỗi khi lấy sản phẩm');
@@ -54,11 +57,8 @@ router.post('/sales/checkout', isAuthenticated, async (req, res) => {
         for (let item of cart) {
             const product = await Product.findById(item.id);
             if (!product) {
-                console.log(`Sản phẩm với ID ${item.id} không tồn tại`);
                 return res.status(400).send(`Sản phẩm với ID ${item.id} không tồn tại`);
             }
-
-            console.log(`Sản phẩm tìm thấy: ${product.name}, Số lượng trong kho: ${product.stock}`);
 
             if (product.stock >= item.quantity) {
                 // Giảm số lượng sản phẩm trong kho
@@ -86,7 +86,6 @@ router.post('/sales/checkout', isAuthenticated, async (req, res) => {
         res.status(500).send('Lỗi khi thanh toán');
     }
 });
-
 
 router.get('/sales/report', isAuthenticated, async (req, res) => {
     const username = req.session.user.username;
@@ -133,8 +132,6 @@ router.get('/partners', (req, res) => {
 });
 
 // GET: Trang quản lý sản phẩm (chỉ hiển thị sản phẩm của người dùng hiện tại)
-// Giả sử bạn có danh sách các danh mục
-const categories = ['Mi - Cháo - Phở', 'Bia - Kẹo', 'Dầu gội - Sữa tắm', 'Văn phòng phẩm', 'Beverage', 'Food Preparation'];
 
 // Route cho trang quản lý sản phẩm
 router.get('/products', isAuthenticated, async (req, res) => {

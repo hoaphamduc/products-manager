@@ -1,2 +1,85 @@
-<h1>Tổng quan</h1>
-<p>Đây là trang tổng quan của hệ thống.</p>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="/assets/bs5/bootstrap.min.css" rel="stylesheet"> <!-- Bootstrap CSS -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 36px;
+        }
+
+        .dashboard-menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: calc(25% - 20px); /* Ensures 4 blocks per row */
+            height: 150px;
+            background-color: #34495e;
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+            border-radius: 10px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-item:hover {
+            background-color: #1abc9c;
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 992px) {
+            .menu-item {
+                width: calc(50% - 20px); /* 2 blocks per row for tablets */
+            }
+        }
+
+        @media (max-width: 576px) {
+            .menu-item {
+                width: 100%; /* Full width for mobile */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Dashboard</h1>
+    <div class="dashboard-menu">
+        <a href="/sales" class="menu-item">Bán hàng</a>
+        <a href="/products" class="menu-item">Quản lý kho</a>
+        <a href="/sales/report" class="menu-item">Báo cáo - thống kê</a>
+        <a href="/update-info" class="menu-item">Đổi thông tin</a>
+        <a href="/change-password" class="menu-item">Đổi mật khẩu</a>
+        <a href="/logout" class="menu-item">Đăng xuất</a>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/assets/bs5/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

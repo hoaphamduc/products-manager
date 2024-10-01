@@ -6,13 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update User Information</title>
     <link href="/assets/bs5/bootstrap.min.css" rel="stylesheet">
+    <script src="/assets/jquery/jquery.js"></script>
+    <script src="/assets/swal2/swal2.js"></script>
 </head>
 
 <body>
+    <link rel="stylesheet" href="/css/style.css">
+    <a href="/dashboard" class="back-to-dashboard">
+        <img src="/icons/bx-log-out.svg">
+    </a>
     <div class="container mt-5">
         <h2>Cập nhật thông tin người dùng</h2>
 
-        <form action="/update-info" method="POST" enctype="multipart/form-data">
+        <form id="update-info-form" enctype="multipart/form-data">
             <!-- Tên cửa hàng -->
             <div class="mb-3">
                 <label for="storeName" class="form-label">Tên cửa hàng</label>
@@ -22,13 +28,13 @@
             <!-- Địa chỉ cửa hàng -->
             <div class="mb-3">
                 <label for="storeAddress" class="form-label">Địa chỉ cửa hàng</label>
-                <input type="text" class="form-control" id="storeAddress" name="storeAddress" value="<%= user.storeAddress %>" required>
+                <input type="text" class="form-control" id="storeAddress" name="storeAddress" value="<%= user.storeAddress %>">
             </div>
 
             <!-- Số điện thoại -->
             <div class="mb-3">
                 <label for="phone" class="form-label">Số điện thoại</label>
-                <input type="text" class="form-control" id="phone" name="phone" value="<%= user.phone %>" required>
+                <input type="text" class="form-control" id="phone" name="phone" value="<%= user.phone %>">
             </div>
 
             <!-- Email -->
@@ -37,37 +43,136 @@
                 <input type="email" class="form-control" id="email" name="email" value="<%= user.email %>" required>
             </div>
 
-            <!-- Vai trò người dùng -->
+            <!-- Vai trò người dùng (chỉ để hiển thị không cho chỉnh sửa) -->
             <div class="mb-3">
                 <label for="role" class="form-label">Vai trò</label>
-                <select class="form-select" id="role" name="role" required>
+                <select class="form-select" id="role" name="role" disabled>
                     <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
                     <option value="shopOwner" <%= user.role === 'shopOwner' ? 'selected' : '' %>>Chủ cửa hàng</option>
                     <option value="staff" <%= user.role === 'staff' ? 'selected' : '' %>>Nhân viên</option>
                 </select>
             </div>
 
+            <!-- Tên ngân hàng -->
+            <div class="mb-3">
+                <label for="bankName" class="form-label">Tên ngân hàng</label>
+                <input type="text" class="form-control" id="bankName" name="bankName" value="<%= user.bankName %>">
+            </div>
+
             <!-- Số tài khoản ngân hàng -->
             <div class="mb-3">
                 <label for="bankAccountNumber" class="form-label">Số tài khoản ngân hàng</label>
-                <input type="text" class="form-control" id="bankAccountNumber" name="bankAccountNumber" value="<%= user.bankAccountNumber %>" required>
+                <input type="text" class="form-control" id="bankAccountNumber" name="bankAccountNumber" value="<%= user.bankAccountNumber %>">
             </div>
 
             <!-- Mã QR (Hình ảnh) -->
             <div class="mb-3">
                 <label for="qrCodeImage" class="form-label">Hình ảnh mã QR</label><br>
                 <% if (user.qrCodeImageUrl) { %>
-                    <img src="<%= user.qrCodeImageUrl %>" alt="QR Code" width="100"><br>
+                    <img id="qrPreview" src="<%= user.qrCodeImageUrl %>" alt="QR Code" width="100"><br>
+                <% } else { %>
+                    <img id="qrPreview" alt="No QR Code" width="100"><br>
                 <% } %>
-                <input type="file" class="form-control" id="qrCodeImage" name="qrCodeImage">
+                <input type="file" class="form-control" id="qrCodeImage" name="qrCodeImage" accept="image/*">
             </div>
 
             <button type="submit" class="btn btn-primary">Cập nhật</button>
         </form>
     </div>
 
-    <script src="/assets/jquery/jquery.js"></script>
-    <script src="/assets/bs5/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Handle image preview when file is selected
+            $('#qrCodeImage').on('change', function () {
+                const [file] = this.files;
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#qrPreview').attr('src', e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    $('#qrPreview').attr('src', '');
+                }
+            });
+
+            $('#update-info-form').on('submit', function (e) {
+                e.preventDefault();
+
+                const storeName = $('#storeName').val();
+                const email = $('#email').val();
+                const phone = $('#phone').val();
+                const bankAccountNumber = $('#bankAccountNumber').val();
+
+                // Validate required fields
+                if (!storeName || !email) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Vui lòng nhập đầy đủ các trường bắt buộc!',
+                    });
+                    return;
+                }
+
+                // Email format validation
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailPattern.test(email)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Vui lòng nhập email hợp lệ!',
+                    });
+                    return;
+                }
+
+                // Phone number validation (only digits allowed)
+                if (phone && !/^\d+$/.test(phone)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số điện thoại không hợp lệ!',
+                    });
+                    return;
+                }
+
+                // Validate bank account number if provided (only digits allowed)
+                if (bankAccountNumber && !/^\d+$/.test(bankAccountNumber)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Số tài khoản ngân hàng không hợp lệ!',
+                    });
+                    return;
+                }
+
+                // Submit form via AJAX
+                const formData = new FormData(this);
+                $.ajax({
+                    url: '/update-info',
+                    method: 'POST',
+                    data: formData,
+                    processData: false, // Prevent jQuery from converting data
+                    contentType: false, // Required for FormData
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: response.message,
+                        }).then(() => {
+                            window.location.href = '/dashboard';
+                        });
+                    },
+                    error: function (xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: xhr.responseJSON ? xhr.responseJSON.message : 'Lỗi không xác định xảy ra',
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

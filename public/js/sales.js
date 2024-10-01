@@ -206,7 +206,7 @@ $('#confirmCashPayment').on('click', function () {
         cancelButtonText: 'Không',
     }).then((result) => {
         if (result.isConfirmed) {
-            printBill();  // Gọi hàm in hóa đơn
+            printBill('cash');  // Gọi hàm in hóa đơn và truyền phương thức thanh toán là "cash"
         }
         processCheckout();  // Xử lý thanh toán
     });
@@ -223,73 +223,96 @@ $('#confirmBankTransfer').on('click', function () {
         cancelButtonText: 'Không',
     }).then((result) => {
         if (result.isConfirmed) {
-            printBill();  // Gọi hàm in hóa đơn
+            printBill('bank');  // Gọi hàm in hóa đơn và truyền phương thức thanh toán là "bank"
         }
         processCheckout();  // Xử lý thanh toán
     });
 });
 
+function printBill(paymentMethod) {
+    // Fetch user information from /user-info API
+    $.ajax({
+        url: '/user-info',
+        method: 'GET',
+        success: function(response) {
+            const user = response.user;
 
-// Print bill function
-function printBill() {
-    const billContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd;">
-            <h1 style="text-align: center; color: #4CAF50;">HÓA ĐƠN THANH TOÁN</h1>
-            <hr>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h3>Cửa Hàng XYZ</h3>
-                <p>Địa chỉ: 123 Đường ABC, Thành phố DEF</p>
-                <p>Điện thoại: 0987 654 321</p>
-            </div>
-            <hr>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <thead>
-                    <tr>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Tên sản phẩm</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Số lượng</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Giá</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Tổng</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${cart.map(item => `
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.quantity}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${item.price.toLocaleString()}đ</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(item.quantity * item.price).toLocaleString()}đ</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-            <hr>
-            <div style="text-align: right; margin-bottom: 20px;">
-                <p style="font-size: 18px;"><strong>Tổng cộng: ${$('#total').text()}</strong></p>
-            </div>
-            <div style="text-align: center;">
-                <p>Cảm ơn bạn đã mua sắm tại Cửa Hàng XYZ!</p>
-                <p>Ngày xuất hóa đơn: ${new Date().toLocaleDateString()}</p>
-            </div>
-        </div>
-    `;
+            // Use fetched user information, defaulting to placeholders if the data is missing
+            const storeName = user.storeName || 'Cửa Hàng XYZ';
+            const storeAddress = user.storeAddress || 'Địa chỉ chưa có';
+            const phoneNumber = user.phone || 'Số điện thoại chưa có';
 
-    const printWindow = window.open('', '', 'height=800,width=600');
-    printWindow.document.write('<html><head><title>In hóa đơn</title><style>');
-    printWindow.document.write(`
-        body { font-family: Arial, sans-serif; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        h1 { color: #4CAF50; }
-        hr { border: 1px solid #ddd; }
-    `);
-    printWindow.document.write('</style></head><body>');
-    printWindow.document.write(billContent);
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.print();
+            // Generate bill content using user information and selected payment method
+            const billContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd;">
+                    <h1 style="text-align: center; color: #4CAF50;">HÓA ĐƠN THANH TOÁN</h1>
+                    <hr>
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h3>Cửa hàng: ${storeName}</h3>
+                        <p>Địa chỉ: ${storeAddress}</p>
+                        <p>Điện thoại: ${phoneNumber}</p>
+                    </div>
+                    <hr>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Tên sản phẩm</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Số lượng</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Giá</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cart.map(item => `
+                                <tr>
+                                    <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
+                                    <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.quantity}</td>
+                                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${item.price.toLocaleString()}đ</td>
+                                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${(item.quantity * item.price).toLocaleString()}đ</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <hr>
+                    <div style="text-align: right; margin-bottom: 20px;">
+                        <p style="font-size: 18px;"><strong>Tổng cộng: ${$('#total').text()}</strong></p>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <p><strong>Phương thức thanh toán:</strong> ${paymentMethod === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'}</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <p>Cảm ơn bạn đã mua sắm tại ${storeName}!</p>
+                        <p>Ngày xuất hóa đơn: ${new Date().toLocaleDateString()}</p>
+                    </div>
+                </div>
+            `;
+
+            // Open the bill content in a new window for printing
+            const printWindow = window.open('', '', 'height=800,width=1200');
+            printWindow.document.write('<html><head><title>In hóa đơn</title><style>');
+            printWindow.document.write(`
+                body { font-family: Arial, sans-serif; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                h1 { color: #4CAF50; }
+                hr { border: 1px solid #ddd; }
+            `);
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write(billContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        },
+        error: function(xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: xhr.responseJSON ? xhr.responseJSON.message : 'Lỗi không xác định xảy ra',
+            });
+        }
+    });
 }
-
 
 // Hàm xử lý thanh toán
 function processCheckout() {

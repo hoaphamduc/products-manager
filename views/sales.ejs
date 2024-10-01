@@ -8,7 +8,6 @@
     <link href="/assets/bs5/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/sale.css">
     <script src="/assets/swal2/swal2.js"></script>
-
 </head>
 
 <body>
@@ -17,17 +16,17 @@
             <!-- Sidebar bên trái chứa các danh mục -->
             <div class="col-md-2">
                 <div class="list-group">
+                    <a href="/dashboard" class="list-group-item list-group-item-action"
+                    style="background-color: #333; color: #fff;">Về trang tổng quan</a>
                     <a href="/sales"
                         class="list-group-item list-group-item-action <%= selectedCategory === 'Tất cả' ? 'active' : '' %>">Tất
                         cả</a>
-                    <% categories.forEach(category=> { %>
+                    <% categories.forEach(category => { %>
                         <a href="/sales?category=<%= category.name %>"
                             class="list-group-item list-group-item-action <%= selectedCategory === category.name ? 'active' : '' %>">
                             <%= category.name %>
                         </a>
-                        <% }) %>
-                            <a href="/dashboard" class="list-group-item list-group-item-action"
-                                style="background-color: #333; color: #fff;">Về trang tổng quan</a>
+                    <% }) %>
                 </div>
             </div>
 
@@ -39,10 +38,10 @@
                 </div>
 
                 <div class="row" id="product-list">
-                    <% products.forEach(product=> { %>
+                    <% products.forEach(product => { %>
                         <div class="col-md-3 mb-4 product-item">
                             <div class="card">
-                                <% if (product.stock===0) { %>
+                                <% if (product.stock === 0) { %>
                                     <div class="card-body border border-danger p-2" style="position: relative;">
                                         <span class="badge bg-danger"
                                             style="position: absolute; top: 10px; right: 10px;">Hết hàng</span>
@@ -58,26 +57,24 @@
                                             <button class="btn btn-secondary disabled">Hết hàng</button>
                                         </div>
                                     </div>
-                                    <% } else { %>
-                                        <div class="card-body">
-                                            <img src="<%= product.imageUrl %>" class="card-img-top" alt="Product Image">
-                                            <div class="card-body text-center">
-                                                <h6 class="card-title">
-                                                    <%= product.name %>
-                                                </h6>
-                                                <p class="card-text">
-                                                    <%= product.price %>đ
-                                                </p>
-                                                <p class="card-text">Số lượng còn: <%= product.stock %>
-                                                </p>
-                                                <button class="btn btn-primary add-to-cart"
-                                                    data-id="<%= product._id %>">Thêm vào giỏ</button>
-                                            </div>
+                                <% } else { %>
+                                    <div class="card-body">
+                                        <img src="<%= product.imageUrl %>" class="card-img-top" alt="Product Image">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title">
+                                                <%= product.name %>
+                                            </h6>
+                                            <p class="card-text">
+                                                <%= product.price %>đ
+                                            </p>
+                                            <p class="card-text">Số lượng còn: <%= product.stock %></p>
+                                            <button class="btn btn-primary add-to-cart" data-id="<%= product._id %>">Thêm vào giỏ</button>
                                         </div>
-                                        <% } %>
+                                    </div>
+                                <% } %>
                             </div>
                         </div>
-                        <% }) %>
+                    <% }) %>
                 </div>
             </div>
 
@@ -123,7 +120,14 @@
                                         <!-- Bank transfer section (hidden by default) -->
                                         <div id="bankTransferDetails" style="display: none;">
                                             <h6 class="mt-3">Quét mã QR để thanh toán:</h6>
-                                            <img src="/images/qr-code.png" alt="QR Code" class="img-fluid">
+                                            <% if (user.qrCodeImageUrl) { %>
+                                                <img src="<%= user.qrCodeImageUrl %>" alt="QR Code" class="img-fluid">
+                                            <% } else { %>
+                                                <p>Chưa có mã QR</p>
+                                            <% } %>
+                                            <h6 class="mt-3">Thông tin tài khoản ngân hàng:</h6>
+                                            <p>Ngân hàng: <%= user.bankName || 'Chưa có' %></p>
+                                            <p>Số tài khoản: <%= user.bankAccountNumber || 'Chưa có' %></p>
                                             <button id="confirmBankTransfer" class="btn btn-primary mt-3">Xác nhận đã
                                                 thanh toán</button>
                                         </div>

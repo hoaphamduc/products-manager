@@ -37,7 +37,7 @@ app.use(session({
         httpOnly: true,  // Chỉ truy cập được qua HTTP
     },
     store: MongoStore.create({
-        mongoUrl: 'mongodb://localhost:27017/ProductsManager',  // URL kết nối MongoDB
+        mongoUrl: process.env.MONGO_URI,  // URL kết nối MongoDB
         collectionName: 'sessions'  // Tên collection để lưu session
     })
 }));

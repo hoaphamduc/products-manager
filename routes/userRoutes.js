@@ -5,23 +5,26 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const VerificationCode = require('../models/VerificationCode');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 // Route đăng ký người dùng
 router.post('/register', async (req, res) => {
-    const { 
-        username, 
-        password, 
-        storeName, 
-        storeAddress = '', 
-        role = 'staff', // Default role is 'staff' if not provided
-        phone = '', // Optional field, initialized to an empty string if not provided
-        email, 
-        country = '', // Optional field
-        city = '', // Optional field
-        referral = '', // Optional field
-        qrCodeImageUrl = '', // Optional field for QR code image URL
-        bankAccountNumber = '', // Optional field for bank account number
-        initData = false // Optional, default is false
+    const {
+        username,
+        password,
+        storeName,
+        storeAddress = '',
+        role = 'user',
+        phone,  // Không để giá trị mặc định, vì chúng ta sẽ xử lý phone riêng
+        email,
+        country = 'Vietnam', // Gán quốc gia mặc định là Vietnam
+        city = '',
+        qrCodeImageUrl = '',
+        bankAccountNumber = '',
+        bankName = '',  // New Bank Name field
     } = req.body;
 
     try {
@@ -31,6 +34,9 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Username hoặc Email đã tồn tại' });
         }
 
+        // Ghép mã quốc gia +84 vào trước số điện thoại
+        const fullPhone = `+84${phone}`;
+
         // Tạo mới người dùng với tất cả các trường
         const user = new User({
             username,
@@ -38,15 +44,18 @@ router.post('/register', async (req, res) => {
             storeName,
             storeAddress,
             role,
-            phone,
+            phone: fullPhone, // Lưu số điện thoại với mã quốc gia
             email,
             country,
             city,
-            referral,
             qrCodeImageUrl,
             bankAccountNumber,
-            initData: initData === 'yes' ? true : false // Convert string 'yes' to true, else false
+            bankName,  // New Bank Name field
         });
+
+        // Mã hóa mật khẩu trước khi lưu
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
 
         // Lưu người dùng vào database
         await user.save();
@@ -83,7 +92,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Tên đăng nhập không tồn tại' });
         }
 
-        // Kiểm tra mật khẩu
+        // Kiểm tra mật khẩu đã mã hóa
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Mật khẩu không đúng' });
@@ -154,31 +163,42 @@ router.post('/update-info', upload.single('qrCodeImage'), async (req, res) => {
     }
 
     const userId = req.session.user.id;
-    const { storeName, storeAddress, phone, email, city, country, role, bankAccountNumber } = req.body;
+    const { storeName, storeAddress, phone, email, city, country, bankAccountNumber, bankName } = req.body;
 
     try {
-
+        // Ensure email is not being duplicated
         const existingUserWithEmail = await User.findOne({ email, _id: { $ne: userId } });
         if (existingUserWithEmail) {
             return res.status(400).json({ message: 'Email đã tồn tại, vui lòng chọn email khác' });
         }
 
-        // Update the user's QR code image if a new one is uploaded
-        let qrCodeImageUrl = req.session.user.qrCodeImageUrl || ''; // Keep the old QR image if no new one is uploaded
+        // Fetch the existing user
+        const user = await User.findById(userId);
+
+        // If a new QR code image is uploaded, delete the old one
+        let qrCodeImageUrl = user.qrCodeImageUrl;
         if (req.file) {
+            if (user.qrCodeImageUrl) {
+                const oldQrPath = path.join(__dirname, '../', user.qrCodeImageUrl);
+                fs.unlink(oldQrPath, (err) => {
+                    if (err) {
+                        console.error('Failed to delete old QR code:', err);
+                    }
+                });
+            }
             qrCodeImageUrl = `/uploads/${req.file.filename}`;
         }
 
         // Prepare the updated data
         const updatedData = {
-            storeName: storeName || '',
-            storeAddress: storeAddress || '',
-            phone: phone || '',
-            email: email || '',
-            city: city || '',
-            country: country || '',
-            role: role || 'staff',
-            bankAccountNumber: bankAccountNumber || '',
+            storeName: storeName || user.storeName,
+            storeAddress: storeAddress || user.storeAddress,
+            phone: phone || user.phone,
+            email: email || user.email,
+            city: city || user.city,
+            country: country || user.country,
+            bankAccountNumber: bankAccountNumber || user.bankAccountNumber,
+            bankName: bankName || user.bankName,
             qrCodeImageUrl: qrCodeImageUrl
         };
 
@@ -196,11 +216,12 @@ router.post('/update-info', upload.single('qrCodeImage'), async (req, res) => {
             email: updatedUser.email,
             storeName: updatedUser.storeName,
             storeAddress: updatedUser.storeAddress,
-            role: updatedUser.role,
+            role: updatedUser.role,  // Role remains unchanged
             phone: updatedUser.phone,
             country: updatedUser.country,
             city: updatedUser.city,
             bankAccountNumber: updatedUser.bankAccountNumber,
+            bankName: updatedUser.bankName,
             qrCodeImageUrl: updatedUser.qrCodeImageUrl
         };
 
@@ -210,7 +231,6 @@ router.post('/update-info', upload.single('qrCodeImage'), async (req, res) => {
         res.status(500).json({ message: 'Lỗi server' });
     }
 });
-
 
 // Route to display user information for updating
 router.get('/update-info', async (req, res) => {
@@ -233,6 +253,161 @@ router.get('/update-info', async (req, res) => {
     } catch (err) {
         console.error('Error fetching user:', err);
         res.status(500).send('Error loading user info');
+    }
+});
+
+router.post('/change-password', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ message: 'Người dùng chưa đăng nhập' });
+    }
+
+    const userId = req.session.user.id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    try {
+        // Find the user in the database
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Người dùng không tồn tại' });
+        }
+
+        // Check if the current password matches
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
+        }
+
+        // Check if new passwords match
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'Mật khẩu mới không khớp' });
+        }
+
+        // Hash the new password and save it
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        return res.status(200).json({ message: 'Đổi mật khẩu thành công' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        return res.status(500).json({ message: 'Lỗi server' });
+    }
+});
+
+
+// Route to render the change password form
+router.get('/change-password', (req, res) => {
+    if (!req.session.user) {
+        // If the user is not logged in, redirect to the login page
+        return res.redirect('/login');
+    }
+
+    // If the user is logged in, render the change password form
+    res.render('changePassword', { title: 'Đổi mật khẩu' });
+});
+
+// Gửi mã xác thực email và lưu vào MongoDB
+router.post('/send-verification-email', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // Kiểm tra xem email đã tồn tại trong hệ thống chưa
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email đã tồn tại, vui lòng chọn email khác.' });
+        }
+
+        // Tạo mã xác thực ngẫu nhiên (6 ký tự)
+        const verificationCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+        const expiresAt = new Date(Date.now() + 5 * 60000); // Thời gian hết hạn là 5 phút
+
+        // Lưu mã xác thực vào MongoDB (nếu tồn tại email đã có mã trước đó thì xóa)
+        await VerificationCode.deleteOne({ email });
+
+        const codeEntry = new VerificationCode({
+            email,
+            code: verificationCode,
+            expiresAt
+        });
+        await codeEntry.save();
+
+        // Cấu hình Nodemailer
+        const transporter = nodemailer.createTransport({
+            service: 'Gmail',
+            auth: {
+                user: process.env.EMAIL_USER, // Tài khoản email của bạn
+                pass: process.env.EMAIL_PASSWORD // Mật khẩu email hoặc App Password
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Mã xác thực tài khoản',
+            text: `Mã xác thực của bạn là: ${verificationCode}. Mã này sẽ hết hạn sau 5 phút.`
+        };
+
+        // Gửi email
+        await transporter.sendMail(mailOptions);
+
+        res.status(200).json({ message: 'Mã xác thực đã được gửi đến email của bạn.' });
+    } catch (error) {
+        console.error('Error sending verification email:', error);
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+});
+
+// Xác nhận mã xác thực
+router.post('/verify-code', async (req, res) => {
+    const { email, code } = req.body;
+
+    // Kiểm tra xem dữ liệu email và code có được cung cấp không
+    if (!email || !code) {
+        return res.status(400).json({ message: 'Thiếu email hoặc mã xác thực.' });
+    }
+
+    try {
+        // Tìm mã xác thực theo email và mã
+        const codeEntry = await VerificationCode.findOne({ email, code });
+
+        if (!codeEntry) {
+            return res.status(400).json({ message: 'Mã xác thực không đúng.' });
+        }
+
+        // Kiểm tra thời gian hết hạn
+        if (codeEntry.expiresAt < new Date()) {
+            return res.status(400).json({ message: 'Mã xác thực đã hết hạn.' });
+        }
+
+        // Mã hợp lệ, thực hiện các bước tiếp theo (ví dụ: đăng ký tài khoản)
+        res.status(200).json({ message: 'Xác thực thành công.' });
+
+        // Xóa mã xác thực sau khi xác nhận thành công
+        await VerificationCode.deleteOne({ _id: codeEntry._id });
+    } catch (error) {
+        console.error('Error verifying code:', error);
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+});
+
+// API kiểm tra xem email và username đã tồn tại chưa
+router.post('/check-user', async (req, res) => {
+    const { username, email } = req.body;
+
+    if (!username || !email) {
+        return res.status(400).json({ message: 'Thiếu tên đăng nhập hoặc email' });
+    }
+
+    try {
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(200).json({ exists: true });
+        } else {
+            return res.status(200).json({ exists: false });
+        }
+    } catch (error) {
+        console.error('Error checking user:', error);
+        return res.status(500).json({ message: 'Lỗi server' });
     }
 });
 
