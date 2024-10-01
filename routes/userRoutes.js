@@ -20,11 +20,8 @@ const redirectIfAuthenticated = (req, res, next) => {
 
 // Route đăng nhập, áp dụng middleware để kiểm tra nếu đã đăng nhập
 router.get('/login', redirectIfAuthenticated, (req, res) => {
-    console.log('Session ID:', req.sessionID);  // In ra session ID để kiểm tra
-    console.log('Session Details:', req.session);  // Kiểm tra thông tin chi tiết của session
     res.render('login');  // Hiển thị trang login
 });
-
 
 // Route đăng ký, áp dụng middleware để kiểm tra nếu đã đăng nhập
 router.get('/register', redirectIfAuthenticated, (req, res) => {
