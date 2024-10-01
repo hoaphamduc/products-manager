@@ -157,9 +157,6 @@ router.post('/update-info', upload.single('qrCodeImage'), async (req, res) => {
     const { storeName, storeAddress, phone, email, city, country, role, bankAccountNumber } = req.body;
 
     try {
-        // Log the request body and file to ensure it's receiving the correct fields and file
-        console.log('Request body:', req.body);
-        console.log('File:', req.file);
 
         const existingUserWithEmail = await User.findOne({ email, _id: { $ne: userId } });
         if (existingUserWithEmail) {
